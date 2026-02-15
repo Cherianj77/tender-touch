@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up — Tender Touch</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --sage: #2d5a3d;
+  --sage-light: #3d7a55;
+  --cream: #faf7f2;
+  --cream-dark: #f0ebe1;
+  --ink: #1a1a18;
+  --ink-light: #3a3a35;
+  --mist: #8a9e93;
+  --gold: #b8975a;
+  --gold-light: #d4af7a;
+  --white: #ffffff;
+  --error: #dc2626;
+  --success: #16a34a;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Noise texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999; opacity: 0.4;
+}
+
+/* ─── NAVBAR ──────────────────────────────────── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 24px 80px;
+  background: rgba(250, 247, 242, 0.88);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(45, 90, 61, 0.1);
+}
+
+.nav-logo { display: flex; flex-direction: row; align-items: center; gap: 12px; text-decoration: none; line-height: 1; }
+.nav-logo-text { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--sage); letter-spacing: 0.04em; }
+.nav-logo-sub { font-size: 9px; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-top: 2px; }
+
+.nav-right { font-size: 12px; font-weight: 400; letter-spacing: 0.08em; color: var(--ink-light); }
+.nav-right a { color: var(--sage); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(45,90,61,0.3); padding-bottom: 1px; transition: border-color 0.2s; }
+.nav-right a:hover { border-color: var(--sage); }
+
+/* ─── PAGE LAYOUT ─────────────────────────────── */
+.page-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ─── LEFT PANEL ──────────────────────────────── */
+.left-panel { position: relative; overflow: hidden; }
+
+.left-panel-img { position: absolute; inset: 0; }
+.left-panel-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; filter: saturate(0.8) brightness(0.72); }
+.left-panel-img::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(26,26,24,0.6) 0%, rgba(45,90,61,0.5) 100%);
+}
+
+.left-panel-content {
+  position: relative; z-index: 2;
+  height: 100%;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 60px 56px;
+}
+
+.left-eyebrow { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; animation: fadeUp 0.8s ease 0.2s both; }
+.left-eyebrow-line { width: 28px; height: 1px; background: var(--gold); }
+.left-eyebrow-text { font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); font-weight: 400; }
+
+.left-panel-content h2 { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 300; line-height: 1.1; color: var(--white); margin-bottom: 16px; animation: fadeUp 0.8s ease 0.3s both; }
+.left-panel-content h2 em { font-style: italic; color: rgba(255,255,255,0.7); }
+
+.left-panel-content p { font-size: 13px; line-height: 1.85; color: rgba(255,255,255,0.65); font-weight: 300; max-width: 320px; margin-bottom: 40px; animation: fadeUp 0.8s ease 0.4s both; }
+
+/* Steps on left panel */
+.steps-list { display: flex; flex-direction: column; gap: 16px; animation: fadeUp 0.8s ease 0.5s both; }
+
+.step-item { display: flex; align-items: center; gap: 14px; }
+
+.step-num {
+  width: 28px; height: 28px; min-width: 28px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: var(--gold-light); font-weight: 600;
+}
+
+.step-item span { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 300; letter-spacing: 0.02em; }
+
+/* ─── RIGHT PANEL ─────────────────────────────── */
+.right-panel {
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 100px 72px 60px;
+  background: var(--cream);
+  position: relative;
+  overflow-y: auto;
+}
+
+.right-panel::before {
+  content: ''; position: absolute;
+  top: -100px; right: -80px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(45,90,61,0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.form-wrap { width: 100%; max-width: 420px; position: relative; z-index: 1; }
+
+/* Eyebrow */
+.form-eyebrow { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; animation: fadeUp 0.7s ease 0.1s both; }
+.form-eyebrow-line { width: 28px; height: 1px; background: var(--gold); }
+.form-eyebrow-text { font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); }
+
+.form-wrap h1 { font-family: 'Cormorant Garamond', serif; font-size: 38px; font-weight: 300; color: var(--ink); line-height: 1.1; margin-bottom: 8px; animation: fadeUp 0.7s ease 0.15s both; }
+.form-wrap h1 em { font-style: italic; color: var(--sage); }
+
+.form-subtitle { font-size: 13px; color: var(--mist); font-weight: 300; margin-bottom: 32px; line-height: 1.6; animation: fadeUp 0.7s ease 0.2s both; }
+
+/* ─── FORM FIELDS ─────────────────────────────── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.form-group { margin-bottom: 18px; animation: fadeUp 0.7s ease both; }
+.form-group:nth-child(1) { animation-delay: 0.22s; }
+.form-group:nth-child(2) { animation-delay: 0.26s; }
+.form-group:nth-child(3) { animation-delay: 0.30s; }
+.form-group:nth-child(4) { animation-delay: 0.34s; }
+.form-group:nth-child(5) { animation-delay: 0.38s; }
+
+.form-label { display: block; font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px; }
+
+.input-wrap { position: relative; }
+
+.input-icon {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  width: 16px; stroke: var(--mist); pointer-events: none; transition: stroke 0.3s;
+  fill: none; stroke-width: 1.5;
+}
+
+.form-input {
+  width: 100%; padding: 13px 16px 13px 44px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300;
+  color: var(--ink); background: var(--white);
+  border: 1px solid rgba(45, 90, 61, 0.15); border-radius: 3px;
+  outline: none; transition: border-color 0.3s, box-shadow 0.3s;
+  letter-spacing: 0.02em;
+}
+.form-input::placeholder { color: #b0bdb6; font-weight: 300; }
+.form-input:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08); }
+.form-input:focus ~ .input-icon { stroke: var(--sage); }
+
+/* Valid / invalid states */
+.form-input.valid { border-color: var(--success); }
+.form-input.invalid { border-color: var(--error); }
+
+.field-hint {
+  font-size: 11px; color: var(--mist); font-weight: 300;
+  margin-top: 5px; letter-spacing: 0.02em; display: block;
+}
+.field-hint.error { color: var(--error); }
+.field-hint.success { color: var(--success); }
+
+/* Password toggle */
+.pwd-toggle {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 4px;
+  display: flex; align-items: center;
+}
+.pwd-toggle svg { width: 16px; stroke: var(--mist); transition: stroke 0.2s; fill: none; stroke-width: 1.5; }
+.pwd-toggle:hover svg { stroke: var(--sage); }
+.has-toggle .form-input { padding-right: 44px; }
+
+/* ─── PASSWORD STRENGTH ───────────────────────── */
+.pwd-strength { margin-top: 8px; }
+.pwd-strength-bar { display: flex; gap: 4px; margin-bottom: 5px; }
+.pwd-strength-bar span {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: rgba(45,90,61,0.1);
+  transition: background 0.3s;
+}
+.pwd-strength-bar span.weak   { background: #ef4444; }
+.pwd-strength-bar span.fair   { background: #f59e0b; }
+.pwd-strength-bar span.good   { background: #3b82f6; }
+.pwd-strength-bar span.strong { background: var(--success); }
+.pwd-strength-label { font-size: 11px; font-weight: 300; color: var(--mist); }
+
+/* ─── ROLE SELECTOR ───────────────────────────── */
+.role-group { margin-bottom: 18px; animation: fadeUp 0.7s ease 0.42s both; }
+
+.role-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+
+.role-card {
+  position: relative; cursor: pointer;
+  padding: 14px 16px;
+  border: 1px solid rgba(45,90,61,0.15);
+  border-radius: 3px; background: var(--white);
+  transition: all 0.25s; display: flex; align-items: center; gap: 10px;
+}
+.role-card:hover { border-color: rgba(45,90,61,0.35); background: var(--cream-dark); }
+
+.role-card input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.role-card.selected {
+  border-color: var(--sage);
+  background: rgba(45,90,61,0.05);
+  box-shadow: 0 0 0 3px rgba(45,90,61,0.08);
+}
+
+.role-icon {
+  width: 34px; height: 34px; min-width: 34px;
+  background: rgba(45,90,61,0.08); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.25s;
+}
+.role-card.selected .role-icon { background: rgba(45,90,61,0.15); }
+.role-icon svg { width: 16px; stroke: var(--sage); fill: none; stroke-width: 1.5; }
+
+.role-info h4 { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+.role-info p { font-size: 11px; font-weight: 300; color: var(--mist); line-height: 1.3; }
+
+/* ─── TERMS CHECKBOX ──────────────────────────── */
+.terms-group {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 24px; animation: fadeUp 0.7s ease 0.46s both;
+  cursor: pointer;
+}
+
+.terms-group input[type="checkbox"] { display: none; }
+
+.custom-checkbox {
+  width: 18px; height: 18px; min-width: 18px;
+  border: 1px solid rgba(45,90,61,0.25); border-radius: 2px;
+  background: var(--white); margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; cursor: pointer;
+}
+
+.terms-group input:checked + .custom-checkbox {
+  background: var(--sage); border-color: var(--sage);
+}
+
+.custom-checkbox svg { width: 10px; stroke: white; fill: none; stroke-width: 3; opacity: 0; transition: opacity 0.2s; }
+.terms-group input:checked + .custom-checkbox svg { opacity: 1; }
+
+.terms-text { font-size: 12px; color: var(--mist); font-weight: 300; line-height: 1.6; }
+.terms-text a { color: var(--sage); text-decoration: none; border-bottom: 1px solid rgba(45,90,61,0.3); padding-bottom: 1px; transition: border-color 0.2s; }
+.terms-text a:hover { border-color: var(--sage); }
+
+/* ─── ERROR MESSAGE ───────────────────────────── */
+.error-msg {
+  display: none; background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.2); border-radius: 3px;
+  padding: 12px 16px; font-size: 12px; color: var(--error);
+  margin-bottom: 18px; font-weight: 300; letter-spacing: 0.02em;
+  align-items: center; gap: 8px;
+}
+.error-msg.show { display: flex; }
+.error-msg svg { width: 14px; stroke: var(--error); fill: none; stroke-width: 2; flex-shrink: 0; }
+
+/* ─── SUBMIT BUTTON ───────────────────────────── */
+.btn-signup {
+  width: 100%; padding: 15px;
+  background: var(--sage); color: var(--white);
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  border: none; border-radius: 3px; cursor: pointer;
+  transition: all 0.3s; position: relative; overflow: hidden;
+  animation: fadeUp 0.7s ease 0.5s both;
+}
+.btn-signup:hover { background: var(--sage-light); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(45, 90, 61, 0.28); }
+.btn-signup:active { transform: translateY(0); }
+.btn-signup.loading { pointer-events: none; opacity: 0.8; }
+.btn-loader { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
+.btn-signup.loading .btn-text { display: none; }
+.btn-signup.loading .btn-loader { display: block; }
+
+/* ─── DIVIDER ─────────────────────────────────── */
+.or-divider { display: flex; align-items: center; gap: 16px; margin: 24px 0; animation: fadeUp 0.7s ease 0.55s both; }
+.or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: rgba(45,90,61,0.12); }
+.or-divider span { font-size: 11px; color: var(--mist); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+
+/* ─── GOOGLE BUTTON ───────────────────────────── */
+.btn-google {
+  width: 100%; padding: 14px; background: var(--white); color: var(--ink);
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400;
+  letter-spacing: 0.05em; border: 1px solid rgba(45,90,61,0.18); border-radius: 3px;
+  cursor: pointer; transition: all 0.3s; display: flex; align-items: center;
+  justify-content: center; gap: 10px;
+  animation: fadeUp 0.7s ease 0.6s both;
+}
+.btn-google:hover { border-color: rgba(45,90,61,0.35); background: var(--cream-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+.btn-google svg { width: 18px; flex-shrink: 0; }
+
+/* ─── LOGIN LINK ──────────────────────────────── */
+.login-prompt { text-align: center; margin-top: 28px; font-size: 13px; color: var(--mist); font-weight: 300; animation: fadeUp 0.7s ease 0.65s both; }
+.login-prompt a { color: var(--sage); text-decoration: none; font-weight: 500; border-bottom: 1px solid rgba(45,90,61,0.3); padding-bottom: 1px; transition: border-color 0.2s; }
+.login-prompt a:hover { border-color: var(--sage); }
+
+/* Footer note */
+.form-footer-note { text-align: center; margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(45,90,61,0.08); font-size: 11px; color: #b0bdb6; font-weight: 300; letter-spacing: 0.04em; animation: fadeUp 0.7s ease 0.7s both; }
+.form-footer-note a { color: var(--mist); text-decoration: none; transition: color 0.2s; }
+.form-footer-note a:hover { color: var(--sage); }
+
+/* ─── ANIMATIONS ──────────────────────────────── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── RESPONSIVE ──────────────────────────────── */
+@media (max-width: 900px) {
+  .page-wrap { grid-template-columns: 1fr; }
+  .left-panel { display: none; }
+  .right-panel { padding: 100px 32px 60px; }
+  .navbar { padding: 18px 32px; }
+}
+@media (max-width: 480px) {
+  .right-panel { padding: 90px 20px 50px; }
+  .navbar { padding: 16px 20px; }
+  .form-wrap h1 { font-size: 30px; }
+  .form-row { grid-template-columns: 1fr; }
+  .role-options { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── NAVBAR ──────────────────────────────── -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">
+    <img src="data:image/jpeg;base64,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" alt="Tender Touch" style="height:52px; width:auto; display:block;">
+    <div style="display:flex;flex-direction:column;line-height:1;">
+      <span class="nav-logo-text">Tender Touch</span>
+      <span class="nav-logo-sub" style="display:block;margin-top:3px;">Vacant Home Care</span>
+    </div>
+  </a>
+  <span class="nav-right">Already have an account? <a href="login.html">Sign in</a></span>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- ─── LEFT PANEL ────────────────────────── -->
+  <div class="left-panel">
+    <div class="left-panel-img">
+      <img src="https://cdn5.f-cdn.com/files/download/206218751/abheesh_80979_kerala_tradition.png?image-optimizer=force&format=webply&width=1680" alt="Kerala traditional home">
+    </div>
+    <div class="left-panel-content">
+      <div class="left-eyebrow">
+        <span class="left-eyebrow-line"></span>
+        <span class="left-eyebrow-text">Get Started</span>
+      </div>
+      <h2>Protect your home.<br><em>From anywhere</em><br>in the world.</h2>
+      <p>Join non-resident Keralites who trust Tender Touch to keep their vacant homes safe, maintained, and fully documented.</p>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <span>Create your free account</span>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <span>Register your Kerala property</span>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <span>Book your first service visit</span>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <span>Relax — we handle the rest</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── RIGHT PANEL — SIGNUP FORM ─────────── -->
+  <div class="right-panel">
+    <div class="form-wrap">
+
+      <div class="form-eyebrow">
+        <span class="form-eyebrow-line"></span>
+        <span class="form-eyebrow-text">Create Account</span>
+      </div>
+
+      <h1>Join Tender<br><em>Touch.</em></h1>
+      <p class="form-subtitle">Set up your account in under a minute — no credit card required.</p>
+
+      <!-- Error message -->
+      <div class="error-msg" id="errorMsg">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        <span id="errorText">Please fill in all required fields.</span>
+      </div>
+
+      <form id="signupForm" novalidate>
+
+        <!-- Name row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="firstName">First Name</label>
+            <div class="input-wrap">
+              <input class="form-input" type="text" id="firstName" placeholder="Cherian" autocomplete="given-name" required>
+              <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lastName">Last Name</label>
+            <div class="input-wrap">
+              <input class="form-input" type="text" id="lastName" placeholder="Joyce" autocomplete="family-name" required>
+              <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <div class="input-wrap">
+            <input class="form-input" type="email" id="email" placeholder="leejohnroy99@gmail.com" autocomplete="email" required>
+            <svg class="input-icon" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="field-hint" id="emailHint"></span>
+        </div>
+
+        <!-- Phone -->
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number</label>
+          <div class="input-wrap">
+            <input class="form-input" type="tel" id="phone" placeholder="" autocomplete="tel">
+            <svg class="input-icon" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-wrap has-toggle">
+            <input class="form-input" type="password" id="password" placeholder="Create a strong password" autocomplete="new-password" required>
+            <svg class="input-icon" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <button type="button" class="pwd-toggle" id="pwdToggle1">
+              <svg viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <!-- Password strength -->
+          <div class="pwd-strength" id="pwdStrength" style="display:none;">
+            <div class="pwd-strength-bar">
+              <span id="bar1"></span>
+              <span id="bar2"></span>
+              <span id="bar3"></span>
+              <span id="bar4"></span>
+            </div>
+            <span class="pwd-strength-label" id="strengthLabel"></span>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <div class="input-wrap has-toggle">
+            <input class="form-input" type="password" id="confirmPassword" placeholder="Repeat your password" autocomplete="new-password" required>
+            <svg class="input-icon" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <button type="button" class="pwd-toggle" id="pwdToggle2">
+              <svg viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <span class="field-hint" id="confirmHint"></span>
+        </div>
+
+        <!-- Role selector -->
+        <div class="role-group">
+          <label class="form-label">I am signing up as</label>
+          <div class="role-options">
+            <label class="role-card selected" id="roleOwner">
+              <input type="radio" name="role" value="owner" checked>
+              <div class="role-icon">
+                <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+              </div>
+              <div class="role-info">
+                <h4>Property Owner</h4>
+                <p>I own a vacant home</p>
+              </div>
+            </label>
+            <label class="role-card" id="roleProvider">
+              <input type="radio" name="role" value="provider">
+              <div class="role-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </div>
+              <div class="role-info">
+                <h4>Service Provider</h4>
+                <p>I provide home services</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Terms -->
+        <label class="terms-group">
+          <input type="checkbox" id="termsCheck">
+          <div class="custom-checkbox">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span class="terms-text">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a> of Tender Touch</span>
+        </label>
+
+        <button type="submit" class="btn-signup" id="signupBtn">
+          <span class="btn-text">Create Account</span>
+          <div class="btn-loader"></div>
+        </button>
+
+      </form>
+
+      <div class="or-divider"><span>or sign up with</span></div>
+
+      <button class="btn-google" id="googleBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <p class="login-prompt">Already have an account? <a href="login.html">Sign in</a></p>
+
+      <p class="form-footer-note">
+        © 2025 Tender Touch &nbsp;·&nbsp;
+        <a href="#">Privacy</a> &nbsp;·&nbsp;
+        <a href="#">Terms</a>
+      </p>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── PASSWORD TOGGLES ────────────────────────────
+function setupToggle(btnId, inputId) {
+  const btn = document.getElementById(btnId);
+  const input = document.getElementById(inputId);
+  btn.addEventListener('click', () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.querySelector('svg').style.stroke = show ? 'var(--sage)' : '';
+  });
+}
+setupToggle('pwdToggle1', 'password');
+setupToggle('pwdToggle2', 'confirmPassword');
+
+// ─── ROLE SELECTOR ───────────────────────────────
+document.querySelectorAll('.role-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    card.querySelector('input[type="radio"]').checked = true;
+  });
+});
+
+// ─── PASSWORD STRENGTH ───────────────────────────
+const pwdInput = document.getElementById('password');
+const pwdStrengthWrap = document.getElementById('pwdStrength');
+const strengthLabel = document.getElementById('strengthLabel');
+const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3'), document.getElementById('bar4')];
+
+pwdInput.addEventListener('input', () => {
+  const val = pwdInput.value;
+  if (!val) { pwdStrengthWrap.style.display = 'none'; return; }
+  pwdStrengthWrap.style.display = 'block';
+
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+
+  const levels = ['', 'weak', 'fair', 'good', 'strong'];
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+
+  bars.forEach((bar, i) => {
+    bar.className = i < score ? levels[score] : '';
+  });
+  strengthLabel.textContent = labels[score] || '';
+  strengthLabel.style.color = score <= 1 ? '#ef4444' : score === 2 ? '#f59e0b' : score === 3 ? '#3b82f6' : 'var(--success)';
+});
+
+// ─── CONFIRM PASSWORD HINT ────────────────────────
+document.getElementById('confirmPassword').addEventListener('input', function() {
+  const hint = document.getElementById('confirmHint');
+  if (!this.value) { hint.textContent = ''; return; }
+  if (this.value === pwdInput.value) {
+    hint.textContent = '✓ Passwords match';
+    hint.className = 'field-hint success';
+  } else {
+    hint.textContent = 'Passwords do not match';
+    hint.className = 'field-hint error';
+  }
+});
+
+// ─── EMAIL VALIDATION HINT ────────────────────────
+document.getElementById('email').addEventListener('blur', function() {
+  const hint = document.getElementById('emailHint');
+  if (!this.value) { hint.textContent = ''; return; }
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value);
+  hint.textContent = valid ? '' : 'Please enter a valid email address';
+  hint.className = valid ? 'field-hint' : 'field-hint error';
+});
+
+// ─── TERMS CHECKBOX ──────────────────────────────
+document.querySelector('.terms-group').addEventListener('click', function(e) {
+  if (e.target.tagName === 'A') return;
+  const cb = document.getElementById('termsCheck');
+  cb.checked = !cb.checked;
+});
+
+// ─── FORM SUBMIT ─────────────────────────────────
+const signupForm = document.getElementById('signupForm');
+const signupBtn  = document.getElementById('signupBtn');
+const errorMsg   = document.getElementById('errorMsg');
+
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorMsg.classList.remove('show');
+
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName  = document.getElementById('lastName').value.trim();
+  const email     = document.getElementById('email').value.trim();
+  const password  = document.getElementById('password').value;
+  const confirm   = document.getElementById('confirmPassword').value;
+  const terms     = document.getElementById('termsCheck').checked;
+
+  // Validation
+  if (!firstName || !lastName) return showError('Please enter your full name.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('Please enter a valid email address.');
+  if (password.length < 6) return showError('Password must be at least 6 characters.');
+  if (password !== confirm) return showError('Passwords do not match.');
+  if (!terms) return showError('Please accept the Terms of Service to continue.');
+
+  signupBtn.classList.add('loading');
+
+  // ── TODO: Replace with Firebase Auth ──────────
+  // import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+  // createUserWithEmailAndPassword(auth, email, password)
+  //   .then((userCredential) => {
+  //     return updateProfile(userCredential.user, {
+  //       displayName: `${firstName} ${lastName}`
+  //     });
+  //   })
+  //   .then(() => window.location.href = 'dashboard.html')
+  //   .catch(err => showError(err.message));
+  // ──────────────────────────────────────────────
+
+  // Simulate (remove when Firebase added)
+  await new Promise(r => setTimeout(r, 1800));
+  signupBtn.classList.remove('loading');
+  signupBtn.style.background = '#1e6b3d';
+  signupBtn.querySelector('.btn-text').textContent = '✓ Account Created!';
+  setTimeout(() => {
+    signupBtn.style.background = '';
+    signupBtn.querySelector('.btn-text').textContent = 'Create Account';
+  }, 2000);
+});
+
+// ─── GOOGLE ──────────────────────────────────────
+document.getElementById('googleBtn').addEventListener('click', () => {
+  // ── TODO: Replace with Firebase Google Sign-In ──
+  // import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+  // const provider = new GoogleAuthProvider();
+  // signInWithPopup(auth, provider)
+  //   .then(() => window.location.href = 'dashboard.html');
+  alert('Google Sign-Up will work after Firebase is connected!');
+});
+
+function showError(msg) {
+  document.getElementById('errorText').textContent = msg;
+  errorMsg.classList.add('show');
+  signupBtn.classList.remove('loading');
+}
+
+// ─── INPUT FOCUS ICON COLOR ───────────────────────
+document.querySelectorAll('.form-input').forEach(input => {
+  input.addEventListener('focus', () => {
+    const icon = input.closest('.input-wrap').querySelector('.input-icon');
+    if (icon) icon.style.stroke = 'var(--sage)';
+  });
+  input.addEventListener('blur', () => {
+    const icon = input.closest('.input-wrap').querySelector('.input-icon');
+    if (icon) icon.style.stroke = '';
+  });
+});
+</script>
+
+</body>
+</html>
