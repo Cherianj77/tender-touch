@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Dashboard — Tender Touch</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ── Modal ────────────────────────────────────────────────── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 24, .5);
+            z-index: 1000; /* above the fixed sidebar (999) */
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-box {
+            background: var(--white);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(26, 26, 24, .2);
+            animation: fadeUp .25s ease;
+        }
+
+        .modal-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 28px 0;
+        }
+
+        .modal-ttl {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 400;
+        }
+
+        .modal-x {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .modal-bdy {
+            padding: 20px 28px;
+        }
+
+        .modal-ftr {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 28px 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── Tabs ─────────────────────────────────────────────────── */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 4px;
+            width: fit-content;
+            margin-bottom: 28px;
+        }
+
+        .tab-btn {
+            padding: 9px 22px;
+            border: none;
+            background: none;
+            border-radius: 9px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .tab-btn.active {
+            background: var(--sage);
+            color: var(--white);
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeUp .3s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* ── Job card ─────────────────────────────────────────────── */
+        .job-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 18px;
+            overflow: hidden;
+            transition: box-shadow .25s;
+        }
+
+        .job-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .jc-head {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 20px 12px;
+        }
+
+        .jc-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--sage-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .jc-icon svg {
+            width: 20px;
+            height: 20px;
+            color: var(--sage);
+        }
+
+        .jc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 400;
+        }
+
+        .jc-sub {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .jc-meta {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            padding: 0 20px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .jc-mr {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .jc-mr svg {
+            width: 13px;
+            height: 13px;
+            color: var(--sage);
+            flex-shrink: 0;
+        }
+
+        .jc-mr strong {
+            color: var(--ink);
+        }
+
+        .jc-note {
+            font-size: 12px;
+            font-style: italic;
+            color: var(--muted);
+            padding: 8px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(247, 244, 239, .6);
+        }
+
+        .jc-foot {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 14px 20px;
+        }
+
+        /* ── Status pill ─────────────────────────────────────────── */
+        .gpill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .gpill.in {
+            background: rgba(45, 90, 61, .1);
+            color: var(--sage);
+        }
+
+        .gpill.out {
+            background: rgba(220, 38, 38, .08);
+            color: var(--error);
+        }
+
+        .gpill.pend {
+            background: rgba(107, 124, 114, .08);
+            color: var(--muted);
+        }
+
+        /* ── Buttons in job card ─────────────────────────────────── */
+        .btn-ci {
+            background: var(--sage);
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            padding: 9px 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .25s;
+        }
+
+        .btn-ci:hover {
+            background: var(--sage-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-ci:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-co {
+            background: none;
+            border: 1px solid var(--error);
+            color: var(--error);
+            border-radius: 9px;
+            padding: 9px 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .25s;
+        }
+
+        .btn-co:hover {
+            background: var(--error);
+            color: #fff;
+        }
+
+        .btn-rp {
+            background: none;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 9px;
+            padding: 9px 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .25s;
+        }
+
+        .btn-rp:hover {
+            background: var(--gold);
+            color: #fff;
+        }
+
+        .btn-as {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 9px;
+            padding: 9px 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-as:hover {
+            border-color: var(--sage);
+            color: var(--sage);
+        }
+
+        /* ── Worker section ──────────────────────────────────────── */
+        .w-sec {
+            padding: 12px 20px;
+            background: rgba(247, 244, 239, .6);
+            border-top: 1px solid var(--border);
+        }
+
+        .w-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .w-row:last-child {
+            border-bottom: none;
+        }
+
+        .wav {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--sage-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--sage);
+            flex-shrink: 0;
+        }
+
+        .wst {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 12px;
+        }
+
+        .wst.si {
+            background: rgba(45, 90, 61, .1);
+            color: var(--sage);
+        }
+
+        .wst.so {
+            background: rgba(107, 124, 114, .08);
+            color: var(--muted);
+        }
+
+        /* ── Worker card (My Workers tab) ────────────────────────── */
+        .wcard {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 12px;
+            transition: box-shadow .2s;
+        }
+
+        .wcard:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .wcav {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--sage-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            color: var(--sage);
+            flex-shrink: 0;
+        }
+
+        /* ── Chip ─────────────────────────────────────────────────── */
+        .chip-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 36px;
+            padding: 8px;
+            background: var(--cream);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--sage-pale);
+            color: var(--sage);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+        }
+
+        .chip button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .chip button:hover {
+            color: var(--error);
+        }
+
+        /* ── Toast ───────────────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: var(--ink);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all .35s;
+            z-index: 1100; /* above open modals */
+            max-width: 360px;
+        }
+
+        .toast.show {
+            transform: none;
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--sage);
+        }
+
+        .toast.error {
+            background: var(--error);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── SIDEBAR ────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-name">Tender Touch</span>
+            <span class="brand-sub">Service Provider</span>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-label">Overview</span>
+            <a href="#" class="nav-item" id="nav-dashboard" onclick="switchTab('dashboard');return false;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                Dashboard
+            </a>
+            <span class="nav-label">Work</span>
+            <a href="#" class="nav-item" id="nav-jobs" onclick="switchTab('jobs');return false;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                My Jobs
+            </a>
+            <a href="#" class="nav-item" id="nav-workers" onclick="switchTab('workers');return false;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                    <path d="M16 3.13a4 4 0 010 7.75" />
+                </svg>
+                My Workers
+            </a>
+            <span class="nav-label">Account</span>
+            <a href="#" class="nav-item" onclick="logout();return false;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign Out
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="sidebarAvatar">?</div>
+                <div>
+                    <div class="user-name" id="sidebarName">Loading…</div>
+                    <div class="user-role">Service Provider</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── MAIN ───────────────────────────────────────────────────── -->
+    <main class="main">
+        <div class="topbar">
+            <div>
+                <h1 id="pageTitle">Provider <em>Dashboard</em></h1>
+                <p id="pageSubtitle">Overview of your assigned jobs and team</p>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-date" id="currentDate"></span>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- ════ DASHBOARD TAB ════════════════════════════════════ -->
+            <div class="tab-pane active" id="tab-dashboard">
+                
+                <!-- My Profile Summary -->
+                <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;display:flex;gap:20px;align-items:center;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
+                        <div style="width:80px;height:80px;border-radius:50%;background:#e2e8f0;overflow:hidden;border:3px solid var(--sage-pale);">
+                            <img id="myAvatar" src="https://ui-avatars.com/api/?name=Provider&background=random" alt="Profile photo" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div id="avatarActions" style="display:flex;flex-direction:column;align-items:center;gap:4px;"></div>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <h2 id="myName" style="font-size:24px;font-family:'Cormorant Garamond',serif;margin:0 0 6px;color:var(--sage);line-height:1.1;">Loading Profile...</h2>
+                            <button class="btn-ghost" onclick="openEditProfile()" style="font-size:11px;padding:4px 10px;margin-bottom:6px;">✎ Edit Profile</button>
+                        </div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:10px;display:flex;gap:8px;align-items:center;">
+                            <span id="myLocation">📍 Location</span>
+                            <span>•</span>
+                            <span id="myRating">⭐ 5.0 Rating</span>
+                        </div>
+                        <p id="myBio" style="font-size:13px;color:var(--ink);margin:0;line-height:1.6;max-width:600px;">...</p>
+                    </div>
+                    <div style="text-align:right;padding-left:24px;border-left:1px solid var(--border);flex-shrink:0;">
+                        <div style="display:flex;gap:24px;">
+                            <div>
+                                <div style="font-size:24px;font-weight:600;color:var(--ink);" id="myJobs">0</div>
+                                <div style="font-size:11px;text-transform:uppercase;color:#6b7280;letter-spacing:0.05em;margin-top:4px;">Jobs Done</div>
+                            </div>
+                            <div>
+                                <div style="font-size:24px;font-weight:600;color:var(--ink);" id="myExp">0</div>
+                                <div style="font-size:11px;text-transform:uppercase;color:#6b7280;letter-spacing:0.05em;margin-top:4px;">Yrs Exp</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <h3 style="font-size:16px;font-weight:600;color:var(--ink);margin:0;">My Services &amp; Prices</h3>
+                        <button class="btn-primary" onclick="openServiceModal()" style="font-size:12px;padding:6px 14px;">+ Add Service</button>
+                    </div>
+                    <p id="commissionNote" style="font-size:12px;color:var(--muted);margin:0 0 14px;">Owners pay your price plus the Tender Touch platform commission. You receive your full price when the job is completed.</p>
+                    <div id="servicesList"><div style="color:#6b7280;font-size:13px;">Loading services...</div></div>
+                </div>
+
+                <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="font-size:16px;font-weight:600;color:var(--ink);margin:0;">My Portfolio</h3>
+                        <button class="btn-primary" onclick="openPortfolioModal()" style="font-size:12px;padding:6px 14px;">+ Add Work</button>
+                    </div>
+                    <div id="portfolioGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));gap:14px;">
+                        <div style="color:#6b7280;font-size:13px;grid-column:1/-1;">Loading portfolio...</div>
+                    </div>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom:28px;">
+                    <div class="stat-card">
+                        <div class="stat-top">
+                            <div class="stat-icon" style="background:rgba(59,130,246,.08);"><svg fill="none"
+                                    stroke="#3b82f6" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg></div><span class="stat-trend">Total</span>
+                        </div>
+                        <div class="stat-value" id="s-total">—</div>
+                        <div class="stat-label">Assigned Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-top">
+                            <div class="stat-icon" style="background:rgba(45,90,61,.08);"><svg fill="none"
+                                    stroke="var(--sage)" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg></div><span class="stat-trend trend-up">Today</span>
+                        </div>
+                        <div class="stat-value" id="s-in">—</div>
+                        <div class="stat-label">Checked In</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-top">
+                            <div class="stat-icon" style="background:rgba(184,151,90,.08);"><svg fill="none"
+                                    stroke="var(--gold)" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                </svg></div><span class="stat-trend trend-up">Done</span>
+                        </div>
+                        <div class="stat-value" id="s-done">—</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-top">
+                            <div class="stat-icon" style="background:var(--sage-pale);"><svg fill="none"
+                                    stroke="var(--sage)" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                </svg></div><span class="stat-trend">Team</span>
+                        </div>
+                        <div class="stat-value" id="s-wk">—</div>
+                        <div class="stat-label">My Workers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-top">
+                            <div class="stat-icon" style="background:rgba(22,163,74,.08);"><svg fill="none"
+                                    stroke="var(--success)" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                                </svg></div><span class="stat-trend">Revenue</span>
+                        </div>
+                        <div class="stat-value" id="s-earned" style="font-size:20px;">—</div>
+                        <div class="stat-label">Total Earned</div>
+                    </div>
+                </div>
+
+                <!-- Upcoming jobs table -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Upcoming Jobs</div>
+                            <div class="card-sub">Service requests assigned to you</div>
+                        </div>
+                        <button class="btn-ghost" onclick="switchTab('jobs')" style="font-size:12px;">View all
+                            →</button>
+                    </div>
+                    <div class="card-body" style="padding:0;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Property</th>
+                                    <th>Service</th>
+                                    <th>Owner</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Check-in</th>
+                                </tr>
+                            </thead>
+                            <tbody id="upTbody">
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="loading-row">
+                                            <div class="spinner"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════ MY JOBS TAB ══════════════════════════════════════ -->
+            <div class="tab-pane" id="tab-jobs">
+                <div id="jobsList">
+                    <div class="loading-row">
+                        <div class="spinner"></div>Loading jobs…
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════ MY WORKERS TAB ═══════════════════════════════════ -->
+            <div class="tab-pane" id="tab-workers">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                    <div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;">My Field
+                            Workers</div>
+                        <div style="font-size:13px;color:var(--muted);margin-top:4px;">Add workers; they check in via a
+                            unique link — no account needed.</div>
+                    </div>
+                    <button class="btn-primary" onclick="openAddWorker()">+ Add Worker</button>
+                </div>
+                <div id="workersList">
+                    <div class="loading-row">
+                        <div class="spinner"></div>Loading…
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Hidden camera input -->
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;"
+        onchange="onPhotoChosen(this)">
+
+    <!-- ══ PHOTO STAMP MODAL ════════════════════════════════════════ -->
+    <div class="modal-overlay" id="photoModal" style="display:none;">
+        <div class="modal-box" style="max-width:420px;">
+            <div class="modal-hdr">
+                <div class="modal-ttl">📸 Photo Stamp Required</div>
+            </div>
+            <div class="modal-bdy">
+                <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Take a photo at the job
+                    site. This photo will be timestamped and shown to the owner as proof of your presence.</p>
+                <div id="photoPreviewWrap" style="display:none;margin-bottom:16px;">
+                    <img id="photoPreview" style="width:100%;border-radius:12px;max-height:240px;object-fit:cover;"
+                        alt="Site photo">
+                    <div
+                        style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--sage);">
+                        <span>✅ Photo captured</span>
+                        <button onclick="retakePhoto()"
+                            style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;">Retake</button>
+                    </div>
+                </div>
+                <div id="photoBtnWrap" style="text-align:center;padding:20px 0;">
+                    <button class="btn-ci" onclick="document.getElementById('photoInput').click()"
+                        style="width:100%;justify-content:center;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                        </svg>
+                        Open Camera
+                    </button>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="cancelPhotoCI()">Cancel</button>
+                <button class="btn-primary" id="photoConfirmBtn" onclick="confirmPhotoCI()" disabled>✅ Check In with
+                    Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ ASSIGN WORKERS MODAL ══════════════════════════════════════ -->
+    <div class="modal-overlay" id="assignModal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-hdr">
+                <div class="modal-ttl">Assign Workers to Job</div><button class="modal-x"
+                    onclick="closeAssign()">×</button>
+            </div>
+            <div class="modal-bdy">
+                <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Select workers to assign. They'll get a
+                    personal GPS check-in link.</p>
+                <div class="form-group"><label class="form-label">Search Workers</label>
+                    <input class="form-input" id="wSearch" type="text" placeholder="Type a name…" oninput="searchW()">
+                </div>
+                <div id="wRes" style="margin-bottom:14px;"></div>
+                <div class="form-group"><label class="form-label">Assigned Workers</label>
+                    <div class="chip-wrap" id="assignChips"><span style="font-size:12px;color:var(--muted);">None
+                            yet</span></div>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="closeAssign()">Cancel</button>
+                <button class="btn-primary" onclick="saveAssign()">Save Assignment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ ADD WORKER MODAL ═══════════════════════════════════════════ -->
+    <div class="modal-overlay" id="addWModal" style="display:none;">
+        <div class="modal-box" style="max-width:420px;">
+            <div class="modal-hdr">
+                <div class="modal-ttl">Add Worker</div><button class="modal-x" onclick="closeAddWorker()">×</button>
+            </div>
+            <div class="modal-bdy">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">First Name *</label><input class="form-input"
+                            id="awFirst" placeholder="Rajan"></div>
+                    <div class="form-group"><label class="form-label">Last Name</label><input class="form-input"
+                            id="awLast" placeholder="Kumar"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Phone *</label><input class="form-input" id="awPhone"
+                        type="tel" placeholder="+91 9999999999"></div>
+                <div class="form-group"><label class="form-label">Specialization</label>
+                    <input class="form-input" id="awSpec" placeholder="e.g. Cleaning, Plumbing…">
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="closeAddWorker()">Cancel</button>
+                <button class="btn-primary" onclick="saveWorker()">Add Worker</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ WORK REPORT MODAL ══════════════════════════════════════════ -->
+    <div class="modal-overlay" id="reportModal" style="display:none;">
+        <div class="modal-box" style="max-width:560px;">
+            <div class="modal-hdr">
+                <div class="modal-ttl">📋 Work Report</div><button class="modal-x" onclick="closeReport()">×</button>
+            </div>
+            <div class="modal-bdy">
+                <div style="font-size:12px;color:var(--muted);background:var(--cream,#f7f5f0);border-radius:8px;padding:10px 12px;margin-bottom:14px;line-height:1.5;">
+                    To complete a job you need: a GPS check-in on site, at least 15 minutes there, a check-out, and an after photo of the finished work. The owner's payment is released only then.
+                </div>
+
+                <!-- Before / After photos -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+                    <div>
+                        <div class="form-label">📷 Before Photo</div>
+                        <div id="beforeThumb" onclick="document.getElementById('beforeInput').click()"
+                            style="height:110px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--cream);font-size:12px;color:var(--muted);text-align:center;overflow:hidden;">
+                            <span>Click to take<br>before photo</span>
+                        </div>
+                        <input type="file" id="beforeInput" accept="image/*" capture="environment" style="display:none;"
+                            onchange="previewPhoto('before',this)">
+                    </div>
+                    <div>
+                        <div class="form-label">📷 After Photo <span style="color:var(--error);">*</span></div>
+                        <div id="afterThumb" onclick="document.getElementById('afterInput').click()"
+                            style="height:110px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--cream);font-size:12px;color:var(--muted);text-align:center;overflow:hidden;">
+                            <span>Click to take<br>after photo</span>
+                        </div>
+                        <input type="file" id="afterInput" accept="image/*" capture="environment" style="display:none;"
+                            onchange="previewPhoto('after',this)">
+                    </div>
+                </div>
+
+                <!-- Digital Checklist -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <div class="form-label">✅ Service Checklist</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" id="checklistGrid">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_clean" style="accent-color:var(--sage);"> General
+                            Cleaning</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_garden"> Garden / Lawn</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_plumb"> Plumbing Check</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_elec"> Electrical Check</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_drain"> Drain / Water Flow</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_roof"> Roof Inspection</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_pest"> Pest / Signs Check</label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input
+                                type="checkbox" id="cl_secur"> Locks / Security</label>
+                    </div>
+                </div>
+
+                <!-- Condition + Notes -->
+                <div class="form-group"><label class="form-label">Overall Condition</label>
+                    <select class="form-select" id="rCond">
+                        <option value="good">✅ Good — Everything as expected</option>
+                        <option value="partial">⚠️ Partial — Some tasks incomplete</option>
+                        <option value="issue">❌ Issue found — Owner should be notified</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Notes for Owner</label>
+                    <textarea class="form-input" id="rNotes" rows="3"
+                        placeholder="Describe work done, any issues found, or items for the owner's attention…"></textarea>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="closeReport()">Cancel</button>
+                <button class="btn-primary" onclick="submitReport()">Submit Report</button>
+            </div>
+        </div>
+    </div>
+    <!-- ══ EDIT PROFILE MODAL ════════════════════════════════════════ -->
+    <div class="modal-overlay" id="editProfileModal" style="display:none;" onclick="if(event.target===this)closeEditProfile()">
+        <div class="modal-box" style="max-width:480px;">
+            <div class="modal-hdr">
+                <div class="modal-ttl">✎ Edit My Profile</div>
+                <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);" onclick="closeEditProfile()">×</button>
+            </div>
+            <div class="modal-bdy" style="display:flex;flex-direction:column;gap:14px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div>
+                        <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">First Name</label>
+                        <input type="text" class="form-input" id="epFirst" placeholder="John">
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">Last Name</label>
+                        <input type="text" class="form-input" id="epLast" placeholder="Doe">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div>
+                        <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">Service City</label>
+                        <input type="text" class="form-input" id="epCity" placeholder="e.g. Kochi">
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">Years Exp.</label>
+                        <input type="number" min="0" class="form-input" id="epExp" placeholder="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">Phone</label>
+                    <input type="text" class="form-input" id="epPhone" placeholder="+91 98765 43210">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">About Me (Bio)</label>
+                    <textarea class="form-input" id="epBio" rows="4" placeholder="Tell owners about your skills and experience..."></textarea>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="closeEditProfile()">Cancel</button>
+                <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SERVICE PRICE MODAL ═══════════════════════════════════════════ -->
+    <div class="modal-overlay" id="serviceModal" style="display:none;" onclick="if(event.target===this)closeServiceModal()">
+        <div class="modal-box" style="max-width:440px;">
+            <div class="modal-hdr">
+                <div class="modal-ttl" id="serviceModalTitle">Add Service</div>
+                <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);" onclick="closeServiceModal()">×</button>
+            </div>
+            <div class="modal-bdy" style="display:flex;flex-direction:column;gap:14px;">
+                <div>
+                    <label class="form-label">Service</label>
+                    <select class="form-input" id="svcType" onchange="toggleCustomService()"></select>
+                    <input type="text" class="form-input" id="svcCustom" maxlength="60" placeholder="Name your service, e.g. Water Tank Cleaning" style="display:none;margin-top:8px;">
+                </div>
+                <div>
+                    <label class="form-label">Your price (₹)</label>
+                    <input type="number" class="form-input" id="svcPrice" min="100" max="100000" step="50" placeholder="e.g. 1500" oninput="updateCommissionPreview()">
+                </div>
+                <div>
+                    <label class="form-label">Short description (optional)</label>
+                    <input type="text" class="form-input" id="svcDesc" maxlength="200" placeholder="e.g. Includes kitchen, bathrooms and verandah">
+                </div>
+                <div id="commissionPreview" role="status" style="border:1px solid #f59e0b;background:#fffbeb;color:#78350f;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;">
+                    Enter your price to see what owners pay.
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="closeServiceModal()">Cancel</button>
+                <button class="btn-primary" id="svcSaveBtn" onclick="saveService()">Save Price</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ ADD PORTFOLIO WORK MODAL ════════════════════════════════════ -->
+    <div class="modal-overlay" id="portfolioUploadModal" style="display:none;" onclick="if(event.target===this)closePortfolioModal()">
+        <div class="modal-box" style="max-width:400px;">
+            <div class="modal-hdr">
+                <div class="modal-ttl">Add Recent Work</div>
+                <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);" onclick="closePortfolioModal()">×</button>
+            </div>
+            <div class="modal-bdy" style="display:flex;flex-direction:column;gap:16px;">
+                <div>
+                    <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">Service Title</label>
+                    <input type="text" class="form-input" id="portTitle" placeholder="e.g. Plumbing Fix in Kochi">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:11px;font-weight:500;color:#6b7280;text-transform:uppercase;margin-bottom:6px;display:block;">Photo</label>
+                    <input type="file" id="portFile" accept="image/jpeg,image/png,image/webp" style="display:block;width:100%;font-size:13px;color:#4b5563;">
+                    <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Max 5MB (JPG, PNG, WEBP)</div>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-ghost" onclick="closePortfolioModal()">Cancel</button>
+                <button class="btn-primary" id="portSubmitBtn" onclick="uploadPortfolioItem()">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/shared-auth.js"></script>
+    <script src="js/provider-dashboard.js"></script>
+</body>
+
+</html>
+

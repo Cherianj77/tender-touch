@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspection Reports — Tender Touch</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .report-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            transition: box-shadow .2s;
+        }
+
+        .report-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .report-card.pass {
+            border-left: 4px solid var(--success);
+        }
+
+        .report-card.fail {
+            border-left: 4px solid var(--error);
+        }
+
+        .report-card.pending {
+            border-left: 4px solid var(--warn);
+        }
+
+        .rc-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 22px;
+            cursor: pointer;
+        }
+
+        .rc-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .rc-icon.pass {
+            background: rgba(22, 163, 74, .1);
+        }
+
+        .rc-icon.fail {
+            background: rgba(220, 38, 38, .08);
+        }
+
+        .rc-icon.pending {
+            background: rgba(217, 119, 6, .08);
+        }
+
+        .rc-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .rc-prop {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .rc-meta {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .rc-badge {
+            margin-left: auto;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 5px 13px;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        .rc-badge.pass {
+            background: rgba(22, 163, 74, .1);
+            color: var(--success);
+        }
+
+        .rc-badge.fail {
+            background: rgba(220, 38, 38, .08);
+            color: var(--error);
+        }
+
+        .rc-badge.pending {
+            background: rgba(217, 119, 6, .08);
+            color: var(--warn);
+        }
+
+        .rc-map-btn {
+            margin-left: 12px;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--sage);
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+
+        .rc-map-btn:hover {
+            background: var(--sage);
+            color: var(--white);
+        }
+
+        .rc-body {
+            padding: 0 22px 18px;
+            display: none;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .rc-body.open {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .rc-detail-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .rc-detail-val {
+            font-size: 13px;
+            color: var(--ink);
+        }
+
+        /* Map modal */
+        #mapModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 24, .6);
+            backdrop-filter: blur(4px);
+            z-index: 1000; /* above the fixed sidebar (999) */
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #mapModal.open {
+            display: flex;
+        }
+
+        .map-modal-inner {
+            background: var(--white);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 680px;
+            overflow: hidden;
+            animation: fadeUp .3s ease;
+        }
+
+        .map-modal-hdr {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .map-modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            color: var(--ink);
+        }
+
+        .map-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+            color: var(--muted);
+        }
+
+        #reportMap {
+            height: 340px;
+        }
+
+        .map-legend {
+            padding: 14px 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand"><span class="brand-name">Tender Touch</span><span class="brand-sub">Property
+                Owner</span></div>
+        <nav class="sidebar-nav">
+            <span class="nav-label">Overview</span>
+            <a href="owner-dashboard.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>Dashboard
+            </a>
+            <a href="owner-properties.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>My Properties
+            </a>
+            <span class="nav-label">Services</span>
+            <a href="owner-bookings.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>Book a Visit
+            </a>
+            <a href="owner-reports.html" class="nav-item active">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>Inspection Reports
+            </a>
+            <a href="owner-bookings.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                </svg>Request QA
+            </a>
+            <a href="owner-alerts.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159a2.032 2.032 0 01-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Alerts <span class="nav-badge" id="alertBadge">0</span>
+            </a>
+            <span class="nav-label">Account</span>
+            <button class="nav-item" onclick="logout()">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>Sign Out
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="sidebarAvatar">?</div>
+                <div>
+                    <div class="user-name" id="sidebarName">Loading…</div>
+                    <div class="user-role">Property Owner</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <div>
+                <h1>Inspection <em>Reports</em></h1>
+                <p>GPS-verified visit records for your properties</p>
+            </div>
+            <span class="topbar-date" id="currentDate"></span>
+        </div>
+        <div class="content">
+            <!-- Filter bar -->
+            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+                <select id="filterProp" class="form-select" style="max-width:220px;" onchange="applyFilter()">
+                    <option value="">All Properties</option>
+                </select>
+                <select id="filterStatus" class="form-select" style="max-width:180px;" onchange="applyFilter()">
+                    <option value="">All Records</option>
+                    <option value="pass">✅ Inside Geo-fence</option>
+                    <option value="fail">❌ Outside Geo-fence</option>
+                    <option value="pending">⏳ No Check-in Yet</option>
+                </select>
+                <div style="margin-left:auto;font-size:12px;color:var(--muted);align-self:center;" id="totalCount">
+                </div>
+            </div>
+
+            <div id="reportsList">
+                <div class="loading-row">
+                    <div class="spinner"></div>Loading reports…
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Map Modal -->
+    <div id="mapModal" onclick="if(event.target===this)closeMap()">
+        <div class="map-modal-inner">
+            <div class="map-modal-hdr">
+                <div class="map-modal-title" id="mapModalTitle">GPS Check-in Map</div>
+                <button class="map-modal-close" onclick="closeMap()">×</button>
+            </div>
+            <div id="reportMap"></div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#2d5a3d"></div>Property Location
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#16a34a;border:2px solid #16a34a;"></div>Inside Geo-fence
+                    ✅
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#dc2626"></div>Outside Geo-fence ❌
+                </div>
+                <div class="legend-item" style="font-size:11px;color:var(--muted)">Green circle = geo-fence boundary
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/shared-auth.js"></script>
+    <script src="js/owner-reports.js"></script>
+</body>
+
+</html>
+
