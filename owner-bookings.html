@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Visit — Tender Touch</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand"><span class="brand-name">Tender Touch</span><span class="brand-sub">Property
+                Owner</span></div>
+        <nav class="sidebar-nav">
+            <span class="nav-label">Overview</span>
+            <a href="owner-dashboard.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>Dashboard
+            </a>
+            <a href="owner-properties.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>My Properties
+            </a>
+            <span class="nav-label">Services</span>
+            <a href="owner-bookings.html" class="nav-item active">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>Book a Visit
+            </a>
+            <a href="owner-reports.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>Inspection Reports
+            </a>
+            <a href="owner-bookings.html" class="nav-item">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                </svg>Request QA
+            </a>
+            <a href="owner-alerts.html" class="nav-item">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159a2.032 2.032 0 01-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Alerts <span class="nav-badge" id="alertBadge">0</span>
+            </a>
+            <span class="nav-label">Account</span>
+            <button class="nav-item" onclick="logout()">
+                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>Sign Out
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="sidebarAvatar">?</div>
+                <div>
+                    <div class="user-name" id="sidebarName">Loading…</div>
+                    <div class="user-role">Property Owner</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <div>
+                <h1>Book a <em>Visit</em></h1>
+                <p>Schedule and manage your property visits</p>
+            </div>
+            <span class="topbar-date" id="currentDate"></span>
+        </div>
+        <div class="content">
+            <div class="page-hdr">
+                <div></div>
+                <button class="btn-primary" onclick="openBookingModal()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" width="14" viewBox="0 0 24 24">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    New Booking
+                </button>
+            </div>
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Service</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Provider</th>
+                            <th>QA Inspection</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsTbody">
+                        <tr>
+                            <td colspan="6">
+                                <div class="loading-row">
+                                    <div class="spinner"></div>Loading…
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- BOOKING MODAL -->
+    <div class="modal-overlay" id="bookingModal" onclick="if(event.target===this)closeBookingModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">New Booking</div><button class="modal-close"
+                    onclick="closeBookingModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label class="form-label">Property *</label>
+                    <select class="form-select" id="bookPropSelect">
+                        <option value="">Select property…</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Service Type *</label>
+                        <select class="form-select" id="bookService">
+                            <option>General Cleaning</option>
+                            <option>Deep Cleaning</option>
+                            <option>Plumbing Check</option>
+                            <option>Electrical Check</option>
+                            <option>Garden Maintenance</option>
+                            <option>Pest Control</option>
+                            <option>Monsoon Prep</option>
+                            <option>Security Check</option>
+                            <option>Full Inspection</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="bookDate">Scheduled Date *</label><input class="form-input"
+                            type="date" id="bookDate" required aria-describedby="bookDateHelp">
+                        <div id="bookDateHelp" style="font-size:11px;color:var(--muted);margin-top:6px;">Bookings are available from 8:00 AM to 5:30 PM IST. Same-day bookings need at least 1 hour notice.</div>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="bookTime">Scheduled Time (IST) *</label>
+                        <input class="form-input" type="time" id="bookTime" required step="1800" min="08:00" max="17:30" aria-describedby="bookDateHelp">
+                    </div>
+                </div>
+                <div class="form-group"><label class="form-label">Service Provider *</label>
+                    <select class="form-select" id="bookProvider">
+                        <option value="">Loading providers…</option>
+                    </select>
+                    <div style="font-size:11px;color:var(--muted);margin-top:5px;">The provider will see this job in
+                        their dashboard and must GPS check-in with a photo on the visit day.</div>
+                </div>
+                <div class="form-group"><label class="form-label">Notes</label>
+                    <textarea class="form-input" id="bookNotes" rows="3"
+                        placeholder="Any special instructions…"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeBookingModal()">Cancel</button>
+                <button class="btn-submit" onclick="saveBooking()">Request Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QA APPOINTMENT MODAL -->
+    <div class="modal-overlay" id="qaModal" onclick="if(event.target===this)closeQAModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Appoint QA Inspector</div><button class="modal-close"
+                    onclick="closeQAModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.7;">Select an independent
+                    QA Inspector to verify the completed work on this booking. They will visit the property within the
+                    due date and submit a full verification report.</p>
+                <div class="form-group"><label class="form-label">Select Inspector *</label>
+                    <select class="form-select" id="qaInspectorSelect">
+                        <option value="">Loading inspectors…</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Trigger Type</label>
+                    <select class="form-select" id="qaTriggerType">
+                        <option value="complaint">🔍 Owner Request</option>
+                        <option value="random">🎲 Random Spot Check</option>
+                        <option value="premium">⭐ Premium Audit</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label" for="qaDueDate">Due By *</label><input class="form-input" type="date"
+                        id="qaDueDate" required aria-describedby="qaDueDateHelp">
+                    <div id="qaDueDateHelp" style="font-size:11px;color:var(--muted);margin-top:6px;">Choose today or a future date in Kerala time.</div>
+                </div>
+                <div id="qaNoInspectors"
+                    style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px;font-size:12px;color:#92400e;">
+                    ⚠️ No QA Inspectors are registered yet. Ask your admin to create a <strong>qa_inspector</strong>
+                    account.</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeQAModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitQAAppoint()">Appoint Inspector</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/shared-auth.js"></script>
+    <script src="js/owner-bookings.js"></script>
+</body>
+
+</html>
+

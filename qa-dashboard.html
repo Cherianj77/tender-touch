@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Inspector — Tender Touch</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* QA-specific styles */
+        .sidebar {
+            background: var(--sage);
+        }
+
+        .sidebar .nav-item {
+            color: rgba(255, 255, 255, 0.7);
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+        }
+
+        .sidebar .nav-item:hover,
+        .sidebar .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+        }
+
+        .sidebar .nav-label {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 10px;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            margin-top: 16px;
+            font-weight: 500;
+            display: block;
+        }
+
+        .sidebar .sidebar-brand .brand-sub {
+            color: var(--gold);
+        }
+
+        .sidebar .sidebar-footer .user-name {
+            color: #fff;
+        }
+
+        .sidebar .sidebar-footer .user-role {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .sidebar .sidebar-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Assignment cards */
+        .assign-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .assign-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: .2s;
+        }
+
+        .assign-card:hover {
+            box-shadow: 0 20px 50px rgba(45, 90, 61, .1);
+            transform: translateY(-2px);
+        }
+
+        .ac-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            width: fit-content;
+        }
+
+        .ac-badge.pending {
+            background: rgba(217, 119, 6, .1);
+            color: var(--warn);
+        }
+
+        .ac-badge.assigned {
+            background: rgba(59, 130, 246, .1);
+            color: #2563eb;
+        }
+
+        .ac-badge.completed {
+            background: rgba(22, 163, 74, .1);
+            color: var(--success);
+        }
+
+        .ac-badge.urgent {
+            background: rgba(220, 38, 38, .1);
+            color: var(--error);
+        }
+
+        .ac-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .ac-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ac-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .ac-row svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .ac-actions {
+            margin-top: 4px;
+        }
+
+        /* Stats */
+        .stat-card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .sc-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sc-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .sc-val {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 400;
+            color: var(--sage-dark);
+            line-height: 1;
+        }
+
+        .sc-lbl {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        /* Completed history */
+        .hist-card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .hc-hdr {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .verdict-pill {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .verdict-pill.approved {
+            background: rgba(22, 163, 74, .1);
+            color: var(--success);
+        }
+
+        .verdict-pill.partial {
+            background: rgba(217, 119, 6, .1);
+            color: var(--warn);
+        }
+
+        .verdict-pill.failed {
+            background: rgba(220, 38, 38, .1);
+            color: var(--error);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 24, .6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: var(--white);
+            width: 100%;
+            max-width: 680px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, .15);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .modal-hdr {
+            padding: 22px 28px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(45, 90, 61, .02);
+        }
+
+        .modal-ttl {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--sage-dark);
+        }
+
+        .modal-x {
+            background: none;
+            border: none;
+            font-size: 26px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .modal-bdy {
+            padding: 28px;
+            overflow-y: auto;
+        }
+
+        .modal-ftr {
+            padding: 18px 28px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            background: rgba(45, 90, 61, .02);
+        }
+
+        .gps-box {
+            background: var(--sage-pale);
+            border: 1px dashed var(--sage);
+            border-radius: 14px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .section-ttl {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--ink);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 18px;
+            margin-top: 28px;
+        }
+
+        .ch-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .ch-lbl {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .ch-opts {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ch-opt {
+            padding: 7px 14px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #fff;
+            transition: .2s;
+            color: var(--muted);
+        }
+
+        .ch-opt.sel.pass {
+            background: var(--success);
+            color: #fff;
+            border-color: var(--success);
+        }
+
+        .ch-opt.sel.fail {
+            background: var(--error);
+            color: #fff;
+            border-color: var(--error);
+        }
+
+        .ch-opt.sel.na {
+            background: var(--muted);
+            color: #fff;
+            border-color: var(--muted);
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .score-box {
+            background: rgba(45, 90, 61, .02);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .score-box label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 10px;
+        }
+
+        .score-sel {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'DM Sans';
+            outline: none;
+        }
+
+        .verdict-opts {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .verdict-opt {
+            padding: 14px;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: .2s;
+            color: var(--muted);
+        }
+
+        .verdict-opt.sel {
+            background: var(--sage);
+            color: #fff;
+            border-color: var(--sage);
+            box-shadow: 0 4px 12px rgba(45, 90, 61, .2);
+        }
+
+        .tab-view {
+            display: none;
+        }
+
+        .tab-view.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-name">Tender Touch</span>
+            <span class="brand-sub">QA Inspector</span>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-label">Overview</span>
+            <button class="nav-item active" id="nav-overview" onclick="switchView('overview')"
+                style="display:flex;align-items:center;gap:12px;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>Overview
+            </button>
+            <span class="nav-label">Inspections</span>
+            <button class="nav-item" id="nav-active" onclick="switchView('active')"
+                style="display:flex;align-items:center;gap:12px;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                </svg>My Assignments
+            </button>
+            <button class="nav-item" id="nav-completed" onclick="switchView('completed')"
+                style="display:flex;align-items:center;gap:12px;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>Completed Reports
+            </button>
+            <span class="nav-label">Account</span>
+            <button class="nav-item" onclick="logout()" style="display:flex;align-items:center;gap:12px;">
+                <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>Sign Out
+            </button>
+        </nav>
+        <div class="sidebar-footer" style="border-top:1px solid rgba(255,255,255,.1);margin-top:auto;padding-top:20px;">
+            <div class="user-card">
+                <div class="user-avatar" id="sidebarAvatar" style="background:var(--gold);color:#1e3d29;">?</div>
+                <div>
+                    <div class="user-name" id="sidebarName" style="color:#fff;">Loading…</div>
+                    <div class="user-role" style="color:rgba(255,255,255,.5);">QA Inspector</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- OVERVIEW VIEW -->
+        <div id="view-overview" class="tab-view active">
+            <div class="topbar">
+                <div>
+                    <h1>QA <em>Overview</em></h1>
+                    <p>Your inspection performance at a glance</p>
+                </div>
+                <div class="topbar-right"><span class="topbar-date" id="currentDate"></span></div>
+            </div>
+            <div class="content">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;" id="qaStats">
+                    <div class="stat-card">
+                        <div class="sc-icon" style="background:rgba(59,130,246,.1)"><svg fill="none" stroke="#3b82f6"
+                                stroke-width="1.8" viewBox="0 0 24 24">
+                                <path d="M9 11l3 3L22 4" />
+                                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                            </svg></div>
+                        <div>
+                            <div class="sc-val" id="stTotal">—</div>
+                            <div class="sc-lbl">Total Assigned</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="sc-icon" style="background:rgba(217,119,6,.1)"><svg fill="none" stroke="var(--warn)"
+                                stroke-width="1.8" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg></div>
+                        <div>
+                            <div class="sc-val" id="stPending">—</div>
+                            <div class="sc-lbl">Pending</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="sc-icon" style="background:rgba(22,163,74,.1)"><svg fill="none"
+                                stroke="var(--success)" stroke-width="1.8" viewBox="0 0 24 24">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg></div>
+                        <div>
+                            <div class="sc-val" id="stCompleted">—</div>
+                            <div class="sc-lbl">Completed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="sc-icon" style="background:var(--sage-pale)"><svg fill="none" stroke="var(--sage)"
+                                stroke-width="1.8" viewBox="0 0 24 24">
+                                <rect x="3" y="4" width="18" height="18" rx="2" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                            </svg></div>
+                        <div>
+                            <div class="sc-val" id="stToday">—</div>
+                            <div class="sc-lbl">Due Today</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div
+                        style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;margin-bottom:16px;color:var(--ink);">
+                        Pending Assignments</div>
+                    <div id="overviewPending">
+                        <div class="loading-row">
+                            <div class="spinner"></div>Loading…
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVE ASSIGNMENTS VIEW -->
+        <div id="view-active" class="tab-view">
+            <div class="topbar">
+                <div>
+                    <h1>My <em>Assignments</em></h1>
+                    <p>All pending inspection assignments</p>
+                </div>
+            </div>
+            <div class="content">
+                <div id="loading" style="text-align:center;padding:60px;color:var(--muted);font-size:15px;">Loading
+                    assignments...</div>
+                <div class="assign-grid" id="assignmentsGrid"></div>
+            </div>
+        </div>
+
+        <!-- COMPLETED VIEW -->
+        <div id="view-completed" class="tab-view">
+            <div class="topbar">
+                <div>
+                    <h1>Completed <em>Reports</em></h1>
+                    <p>Your submitted inspection history</p>
+                </div>
+            </div>
+            <div class="content">
+                <div id="completedList">
+                    <div class="loading-row">
+                        <div class="spinner"></div>Loading completed inspections…
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- INSPECTION MODAL -->
+    <div class="modal-overlay" id="inspModal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-hdr">
+                <div class="modal-ttl">Quality Inspection Report</div>
+                <button class="modal-x" onclick="closeInsp()">×</button>
+            </div>
+            <div class="modal-bdy">
+                <div class="gps-box" id="gpsBox">
+                    <div style="font-size:36px;margin-bottom:12px;">📍</div>
+                    <div style="font-weight:500;font-size:18px;margin-bottom:8px;color:var(--ink);">Location
+                        Verification Required</div>
+                    <div style="font-size:14px;color:var(--muted);margin-bottom:24px;">You must be physically at the
+                        property to begin the inspection.</div>
+                    <button class="btn-primary" onclick="checkIn()" id="btnCheckIn">Verify My Location</button>
+                    <div id="gpsStatus" style="font-size:13px;margin-top:14px;color:var(--error);font-weight:500;">
+                    </div>
+                </div>
+
+                <div id="formContent" style="display:none;">
+                    <div class="section-ttl">Standard Checklist</div>
+                    <div id="checklist"></div>
+
+                    <div class="section-ttl">Detailed Scores</div>
+                    <div class="score-grid">
+                        <div class="score-box"><label>Cleanliness</label><select id="sc_cln" class="score-sel">
+                                <option value="5">5 — Excellent</option>
+                                <option value="4">4 — Good</option>
+                                <option value="3">3 — Average</option>
+                                <option value="2">2 — Poor</option>
+                                <option value="1">1 — Very Bad</option>
+                            </select></div>
+                        <div class="score-box"><label>Security Level</label><select id="sc_sec" class="score-sel">
+                                <option value="5">5 — Excellent</option>
+                                <option value="4">4 — Good</option>
+                                <option value="3">3 — Average</option>
+                                <option value="2">2 — Poor</option>
+                                <option value="1">1 — Very Bad</option>
+                            </select></div>
+                        <div class="score-box"><label>Maintenance</label><select id="sc_mnt" class="score-sel">
+                                <option value="5">5 — Excellent</option>
+                                <option value="4">4 — Good</option>
+                                <option value="3">3 — Average</option>
+                                <option value="2">2 — Poor</option>
+                                <option value="1">1 — Very Bad</option>
+                            </select></div>
+                        <div class="score-box"><label>Overall Grade</label><select id="sc_ovr" class="score-sel">
+                                <option value="5">5 — Excellent</option>
+                                <option value="4">4 — Good</option>
+                                <option value="3">3 — Average</option>
+                                <option value="2">2 — Poor</option>
+                                <option value="1">1 — Very Bad</option>
+                            </select></div>
+                    </div>
+
+                    <div class="section-ttl" style="margin-top:24px;">Final Verdict</div>
+                    <div class="verdict-opts">
+                        <div class="verdict-opt sel" onclick="setVerdict(this, 'approved')">✅ Approved</div>
+                        <div class="verdict-opt" onclick="setVerdict(this, 'partial')">⚠️ Partial Issue</div>
+                        <div class="verdict-opt" onclick="setVerdict(this, 'failed')">❌ Failed</div>
+                    </div>
+                    <textarea id="inspNotes" placeholder="Additional inspector notes or findings..."
+                        style="width:100%;border:1px solid var(--border);border-radius:12px;padding:16px;font-family:'DM Sans';font-size:14px;margin-top:20px;min-height:120px;outline:none;resize:vertical;"></textarea>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn-cancel" onclick="closeInsp()">Cancel</button>
+                <button class="btn-submit" id="btnSubmit" onclick="submitInsp()" disabled>Submit Report</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/shared-auth.js"></script>
+    <script src="js/qa-dashboard.js"></script>
+</body>
+
+</html>
+

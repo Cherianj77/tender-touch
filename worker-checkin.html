@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Check-in — Tender Touch</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+    <style>
+        :root {
+            --sage: #2d5a3d;
+            --sage-light: #3d7a53;
+            --sage-pale: #e8f0ea;
+            --gold: #b8975a;
+            --ink: #1a1a18;
+            --cream: #f7f4ef;
+            --white: #fff;
+            --muted: #6b7c72;
+            --error: #dc2626;
+            --border: rgba(45, 90, 61, .12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 8px 40px rgba(45, 90, 61, .08);
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--sage);
+            text-align: center;
+            margin-bottom: 28px;
+            letter-spacing: .04em;
+        }
+
+        .logo small {
+            display: block;
+            font-size: 11px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-top: 2px;
+        }
+
+        .heading {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .sub {
+            font-size: 13px;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .detail-box {
+            background: var(--cream);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-row svg {
+            width: 15px;
+            height: 15px;
+            color: var(--sage);
+            flex-shrink: 0;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            color: var(--muted);
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .detail-val {
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        .btn-big {
+            width: 100%;
+            background: var(--sage);
+            color: var(--white);
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all .25s;
+            margin-bottom: 10px;
+        }
+
+        .btn-big:hover {
+            background: var(--sage-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-big:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-out {
+            width: 100%;
+            background: none;
+            border: 1px solid var(--error);
+            color: var(--error);
+            border-radius: 12px;
+            padding: 14px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .25s;
+            margin-bottom: 10px;
+        }
+
+        .btn-out:hover {
+            background: var(--error);
+            color: var(--white);
+        }
+
+        .result {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .result.success {
+            background: rgba(45, 90, 61, .08);
+            color: var(--sage);
+        }
+
+        .result.error {
+            background: rgba(220, 38, 38, .07);
+            color: var(--error);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, .4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-badge.in {
+            background: rgba(45, 90, 61, .1);
+            color: var(--sage);
+        }
+
+        .status-badge.out {
+            background: rgba(220, 38, 38, .08);
+            color: var(--error);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card" id="mainCard">
+        <div class="logo">Tender Touch<small>Worker Check-in</small></div>
+        <div id="loadingView" style="text-align:center;padding:30px 0;">
+            <div class="spinner"
+                style="border-color:rgba(45,90,61,.3);border-top-color:var(--sage);margin:0 auto 12px;width:28px;height:28px;">
+            </div>
+            <div style="font-size:13px;color:var(--muted);">Loading job details…</div>
+        </div>
+        <div id="jobView" style="display:none;">
+            <div class="heading">Your Job</div>
+            <div class="sub" id="workerGreeting">Welcome! Here are your job details.</div>
+            <div class="detail-box">
+                <div class="detail-row"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg><span class="detail-label">Property</span><span class="detail-val" id="dProp">—</span></div>
+                <div class="detail-row"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg><span class="detail-label">Location</span><span class="detail-val" id="dCity">—</span></div>
+                <div class="detail-row"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg><span class="detail-label">Service</span><span class="detail-val" id="dService">—</span></div>
+                <div class="detail-row"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg><span class="detail-label">Date</span><span class="detail-val" id="dDate">—</span></div>
+                <div class="detail-row"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                    </svg><span class="detail-label">Geo-fence</span><span class="detail-val" id="dGeo">—</span></div>
+            </div>
+            <!-- show current check-in result if exists -->
+            <div id="currentStatus" style="display:none;" class="result success"></div>
+            <!-- GPS check-in button -->
+            <button class="btn-big" id="checkinBtn" onclick="doCheckIn()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                GPS Check-in
+            </button>
+            <button class="btn-out" id="checkoutBtn" style="display:none;" onclick="doCheckOut()">Check Out</button>
+            <div id="resultBox" style="display:none;" class="result"></div>
+        </div>
+        <div id="errorView" style="display:none;text-align:center;padding:20px 0;">
+            <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+            <div style="font-size:15px;color:var(--ink);margin-bottom:8px;">Invalid check-in link</div>
+            <div style="font-size:13px;color:var(--muted);" id="errMsg">Please ask your supervisor for the correct link.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const db = window.createTenderTouchClient();
+        const params = new URLSearchParams(window.location.search);
+        const BID = params.get('b');
+        const CHECKIN_TOKEN = params.get('t');
+
+        let booking = null;
+        let worker = null;
+        let existingCI = null;
+
+        async function init() {
+            if (!BID || !CHECKIN_TOKEN) {
+                showError('This check-in link is incomplete. Ask your supervisor for a new job link.');
+                return;
+            }
+
+            const { data, error } = await db.rpc('get_worker_checkin', {
+                p_token: CHECKIN_TOKEN,
+                p_booking_id: BID
+            });
+            if (error || !data) {
+                console.error('Check-in link lookup failed:', error);
+                showError('This check-in link is invalid or the job is no longer available.');
+                return;
+            }
+
+            worker = data.worker;
+            booking = data.booking;
+            booking.properties = data.property;
+            existingCI = data.checkin;
+            showJob();
+        }
+
+        function showJob() {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('jobView').style.display = 'block';
+            const prop = booking.properties || {};
+
+            document.getElementById('workerGreeting').textContent =
+                `Hello, ${worker.first_name}! Here are your job details.`;
+            document.getElementById('dProp').textContent = prop.name || '—';
+            document.getElementById('dCity').textContent = [prop.city, prop.state].filter(Boolean).join(', ') || '—';
+            document.getElementById('dService').textContent = booking.service_type || '—';
+            const visitDate = new Date(`${booking.scheduled_date}T00:00:00Z`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+            const visitTime = booking.scheduled_time ? new Date(`2000-01-01T${booking.scheduled_time}Z`).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) + ' IST' : '';
+            document.getElementById('dDate').textContent = [visitDate, visitTime].filter(Boolean).join(' · ');
+            document.getElementById('dGeo').textContent = prop.lat != null && prop.lng != null ? `${prop.geofence_radius || 100}m radius` : 'Not set by owner';
+
+            // Check-in opens on the day of the visit (Kerala date).
+            const keralaToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+            if (!existingCI && booking.scheduled_date > keralaToday) {
+                document.getElementById('checkinBtn').style.display = 'none';
+                showResult(`⏳ Check-in opens on ${visitDate}, the day of the job.`, true);
+            }
+
+            if (existingCI) {
+                const st = document.getElementById('currentStatus');
+                const isIn = existingCI.inside_geofence;
+                const coTime = existingCI.check_out_time;
+                // A finished shift is not an error, wherever it was recorded.
+                st.className = `result ${coTime || isIn ? 'success' : 'error'}`;
+                st.style.display = 'block';
+                if (coTime) {
+                    st.textContent = `✅ Shift completed. Checked out ${istWhen(coTime)}.`;
+                    document.getElementById('checkinBtn').style.display = 'none';
+                    document.getElementById('checkoutBtn').style.display = 'none';
+                } else {
+                    st.textContent = `${isIn ? '✅ You are checked IN and inside the geo-fence' : '❌ You are checked in but OUTSIDE the geo-fence'} · ${timeAgo(existingCI.check_in_time)}`;
+                    document.getElementById('checkinBtn').style.display = 'none';
+                    document.getElementById('checkoutBtn').style.display = 'block';
+                }
+            }
+        }
+
+        async function doCheckIn() {
+            if (!navigator.geolocation) { showResult('GPS is not supported on this device.', false); return; }
+            const btn = document.getElementById('checkinBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>Getting GPS…';
+
+            navigator.geolocation.getCurrentPosition(async pos => {
+                const myLat = pos.coords.latitude;
+                const myLng = pos.coords.longitude;
+                const prop = booking.properties || {};
+
+                const { data, error } = await db.rpc('worker_check_in', {
+                    p_token: CHECKIN_TOKEN,
+                    p_booking_id: BID,
+                    p_lat: myLat,
+                    p_lng: myLng
+                });
+                if (error || !data) {
+                    console.error('Check-in save failed:', error);
+                    showResult(error?.message || 'Could not save check-in. Ask your supervisor to check the link and connection.', false);
+                    btn.disabled = false;
+                    btn.innerHTML = 'GPS Check-in';
+                    return;
+                }
+
+                existingCI = data;
+                btn.style.display = 'none';
+                document.getElementById('checkoutBtn').style.display = 'block';
+                if (data.inside_geofence) {
+                    showResult('✅ Checked in successfully! You are inside the geo-fence.\n📍 ' + myLat.toFixed(5) + ', ' + myLng.toFixed(5), true);
+                } else if (prop.lat == null || prop.lng == null) {
+                    showResult('📍 Checked in — no geo-fence is configured for this property.\nCoords: ' + myLat.toFixed(5) + ', ' + myLng.toFixed(5), true);
+                } else {
+                    showResult('⚠️ Checked in, but you are outside the property\'s geo-fence. Your supervisor can see this on their dashboard.\nCoords: ' + myLat.toFixed(5) + ', ' + myLng.toFixed(5), false);
+                }
+            }, err => {
+                showResult('GPS error: ' + err.message + '. Please allow location access.', false);
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>GPS Check-in';
+            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+        }
+
+        async function doCheckOut() {
+            const btn = document.getElementById('checkoutBtn');
+            btn.disabled = true;
+            btn.textContent = 'Checking out…';
+            const { data, error } = await db.rpc('worker_check_out', {
+                p_token: CHECKIN_TOKEN,
+                p_booking_id: BID
+            });
+            if (error || !data) {
+                console.error('Check-out failed:', error);
+                showResult('Could not save check-out. Ask your supervisor to check the link and connection.', false);
+                btn.disabled = false;
+                btn.textContent = 'Check Out';
+                return;
+            }
+            existingCI = { ...existingCI, check_out_time: data.checked_out_at };
+            btn.style.display = 'none';
+            showResult('✅ Checked out successfully. Have a great day!', true);
+        }
+
+        function showResult(msg, ok) {
+            const el = document.getElementById('resultBox');
+            el.style.display = 'block';
+            el.className = `result ${ok ? 'success' : 'error'}`;
+            el.textContent = msg;
+        }
+
+        function showError(msg) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('errorView').style.display = 'block';
+            document.getElementById('errMsg').textContent = msg;
+        }
+
+        // "at 9:50 pm" for today, "on 16 Nov at 9:50 pm" otherwise (Kerala time).
+        function istWhen(iso) {
+            const d = new Date(iso);
+            const day = x => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(x);
+            const time = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+            if (day(d) === day(new Date())) return `at ${time}`;
+            return `on ${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })} at ${time}`;
+        }
+
+        function timeAgo(iso) {
+            const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+            if (s < 60) return 'just now';
+            if (s < 3600) return Math.floor(s / 60) + 'm ago';
+            return Math.floor(s / 3600) + 'h ago';
+        }
+
+        init().catch(error => {
+            console.error('Worker check-in initialization failed:', error);
+            showError('Could not reach the check-in service. Please try again later.');
+        });
+    </script>
+</body>
+
+</html>
+
